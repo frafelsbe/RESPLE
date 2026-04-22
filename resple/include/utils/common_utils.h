@@ -55,6 +55,23 @@ POINT_CLOUD_REGISTER_POINT_STRUCT(ouster_ros::Point,
     (std::uint32_t, t, t)
 )
 
+namespace asdt1_ros {
+    struct EIGEN_ALIGN16 Point {
+        PCL_ADD_POINT4D;
+        float intensity;
+        uint32_t t;
+        EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+    }EIGEN_ALIGN16;
+}
+
+POINT_CLOUD_REGISTER_POINT_STRUCT(asdt1_ros::Point,
+    (float, x, x)
+    (float, y, y)
+    (float, z, z)
+    (float, intensity, intensity)
+    (std::uint32_t, t, t)
+)
+
 namespace hesai_ros {
   struct EIGEN_ALIGN16 Point {
     PCL_ADD_POINT4D;
@@ -334,5 +351,4 @@ struct PointData {
     }    
     EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 };
-
 

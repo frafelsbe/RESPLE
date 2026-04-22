@@ -2,6 +2,7 @@
 #include <pcl/io/pcd_io.h>
 #include <pcl/features/normal_3d.h>
 #include <pcl/filters/voxel_grid.h>
+#include <cmath>
 #include <thread>
 #include <iostream>
 #include <queue>
@@ -167,6 +168,59 @@ class OusterBuff : public MappingBase<pcl::PointXYZINormal>
 
   private:
     rclcpp::Subscription<sensor_msgs::msg::PointCloud2>::SharedPtr pc_subscription_ouster;
+    int64_t time_offset = 0;
+};
+
+class ASDT1Buff : public MappingBase<pcl::PointXYZINormal>
+{
+  public:
+  ASDT1Buff(rclcpp::Node::SharedPtr &nh, const LidarConfig& lidar_config) : MappingBase<pcl::PointXYZINormal>(nh, lidar_config)
+    {
+        pc_subscription_asdt1 = nh->create_subscription<sensor_msgs::msg::PointCloud2>(
+            this->lidar.topic, 100, std::bind(&ASDT1Buff::asdt1LidarCallback, this, std::placeholders::_1));
+        double lidar_time_offset = CommonUtils::readParam<double>(nh, "lidar_time_offset", 0.0);
+        time_offset = 1e9 * lidar_time_offset;
+    }
+
+    void asdt1LidarCallback(const sensor_msgs::msg::PointCloud2::SharedPtr asdt1_msg_in)
+    {
+        this->pc_last->clear();
+        pcl::PointCloud<asdt1_ros::Point>::Ptr pc_last_asdt1(new pcl::PointCloud<asdt1_ros::Point>());
+        pcl::fromROSMsg(*asdt1_msg_in, *pc_last_asdt1);
+        size_t plsize = pc_last_asdt1->size();
+        if (plsize == 0) return;
+        this->pc_last->reserve(plsize);
+        pcl::PointXYZINormal pt;
+        for (uint i = 0; i < plsize; i++) {
+            pt.x = pc_last_asdt1->points[i].x;
+            pt.y = pc_last_asdt1->points[i].y;
+            pt.z = pc_last_asdt1->points[i].z;
+            pt.intensity = float(pc_last_asdt1->points[i].t) / float(1e6); // unit: ms
+            pt.curvature = pc_last_asdt1->points[i].intensity;
+            if (!std::isfinite(pt.x) || !std::isfinite(pt.y) || !std::isfinite(pt.z)) {
+                continue;
+            }
+            if (pt.intensity >= 0) {
+                this->pc_last->points.push_back(pt);
+            }
+        }
+        this->pc_last->header.frame_id = this->frame_id;
+        this->pc_last->header.stamp = rclcpp::Time(asdt1_msg_in->header.stamp).nanoseconds() - time_offset;
+        std::vector<int> indices;
+        pcl::removeNaNFromPointCloud(*this->pc_last, *this->pc_last, indices);
+        if (this->pc_last->points.empty()) return;
+        ds_filter_each_scan.setInputCloud(pc_last);
+        this->pc_last_ds->clear();
+        ds_filter_each_scan.filter(*this->pc_last_ds);
+        pc_last_ds->header.frame_id = this->frame_id;
+        pc_last_ds->header.stamp = rclcpp::Time(asdt1_msg_in->header.stamp).nanoseconds() - time_offset;
+        mtx.lock();
+        this->pc_L_buff.push_back(*pc_last_ds);
+        mtx.unlock();
+    }
+
+  private:
+    rclcpp::Subscription<sensor_msgs::msg::PointCloud2>::SharedPtr pc_subscription_asdt1;
     int64_t time_offset = 0;
 };
 
@@ -613,6 +667,8 @@ int main(int argc, char** argv) {
     for (const auto& lidar : lidars) {
         if (!lidar.type.compare("Ouster")) {
             buffs.push_back(new OusterBuff(nh, lidar));
+        } else if (!lidar.type.compare("ASDT1")) {
+            buffs.push_back(new ASDT1Buff(nh, lidar));
         } else if (!lidar.type.compare("Mid70Avia")) {
             buffs.push_back(new Mid70AviaBuff(nh, lidar));
         } else if (!lidar.type.compare("HAP360")) {
