@@ -8,7 +8,7 @@
       lidar_type: ASDT1
       scan_line: 24
       blind: 0.50
-      q_lb: [0.0, 0.0, 0.0, 1.0]
+      q_lb: [1.0, 0.0, 0.0, 0.0]
       t_lb: [0.0, 0.0, 0.0]
       w_pt: 0.01
     lidar_time_offset: 0.0
