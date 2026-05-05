@@ -8,12 +8,12 @@
       lidar_type: ASDT1
       scan_line: 24
       blind: 1.0
-      q_lb: [0.0, 0.0, 0.0, 1.0]
+      q_lb: [0.0, 0.0, 1.0, 0.0]
       t_lb: [0.0, 0.0, 0.0]
       w_pt: 0.01
     lidar_time_offset: 0.0
 
-    knot_hz: 100
+    knot_hz: 20
     if_lidar_only: false
 
     ds_scan_voxel: 0.1
@@ -35,7 +35,7 @@
     n_iter: 1
     num_points_upd: 300
 
-    cov_acc: [4.35e-5, 4.35e-5, 4.35e-5]
-    cov_gyro: [4.20e-7, 4.20e-7, 4.20e-7]
+    cov_acc: [1.0, 1.0, 1.0]
+    cov_gyro: [0.1, 0.1, 0.1]
     cov_ba: [0.005, 0.005, 0.005]
     cov_bg: [0.005, 0.005, 0.005]
