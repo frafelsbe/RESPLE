@@ -8,10 +8,11 @@
       lidar_type: ASDT1
       scan_line: 24
       blind: 1.0
-      q_lb: [0.0, 0.0, 1.0, 0.0]
-      # Sony AS-DT1 design offset, converted so RESPLE's derived t_bl is
-      # LiDAR origin in IMU/body frame: [0.00356, 0.00810, -0.00785] m.
-      t_lb: [0.00356, -0.00810, -0.00785]
+      # Sony AS-DT1 same-axis design offset is LiDAR origin in IMU/body frame:
+      # t_bl = [0.00356, 0.00810, -0.00785] m.
+      # RESPLE stores T_lb in q_lb/t_lb and derives T_bl by inversion.
+      q_lb: [1.0, 0.0, 0.0, 0.0]
+      t_lb: [-0.00356, -0.00810, 0.00785]
       w_pt: 0.01
     lidar_time_offset: 0.0
 
